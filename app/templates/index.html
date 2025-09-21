@@ -1,0 +1,102 @@
+{% extends 'layout.html' %}
+
+{% block title %}Bienvenido al Sistema de Gestión de Talento Humano{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Encabezado de Bienvenida -->
+    <div class="p-5 mb-4 bg-light rounded-3 shadow-sm">
+        <div class="container-fluid py-5">
+            <h1 class="display-5 fw-bold">Sistema de Gestión de Talento Humano</h1>
+            <p class="col-md-8 fs-4">
+                Bienvenido al panel de control centralizado de Finsolred. Esta herramienta está diseñada para automatizar y simplificar la gestión de la asistencia, horarios, y novedades del personal.
+            </p>
+            <a href="{{ url_for('reportes.index') }}" class="btn btn-primary btn-lg">Generar un Reporte Ahora <i class="fas fa-arrow-right ms-2"></i></a>
+        </div>
+    </div>
+
+    <!-- Sección de Accesos Directos -->
+    <div class="row align-items-md-stretch g-4 mb-5">
+        <div class="col-md-6">
+            <div class="h-100 p-5 text-white bg-primary rounded-3 shadow">
+                <h2><i class="fas fa-users me-2"></i> Gestión de Grupos</h2>
+                <p>Cree equipos de trabajo, asigne horarios fijos (ej. 8:00 a 18:00) y administre fácilmente qué empleados pertenecen a cada grupo operativo.</p>
+                <a href="{{ url_for('grupos.index') }}" class="btn btn-outline-light">Administrar Grupos</a>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="h-100 p-5 bg-light border rounded-3 shadow-sm">
+                <h2><i class="fas fa-file-signature me-2"></i> Novedades del Personal</h2>
+                <p>Registre todas las ausencias y permisos. El sistema usará esta información para evitar marcar faltas o atrasos incorrectos en los reportes.</p>
+                <a href="{{ url_for('justificaciones.index') }}" class="btn btn-outline-secondary me-2">Ver Justificaciones</a>
+                <a href="{{ url_for('permisos.index') }}" class="btn btn-outline-secondary">Ver Permisos</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Guía de Funcionamiento de Módulos -->
+    <div class="row">
+        <div class="col-12">
+            <h2 class="pb-2 border-bottom">¿Cómo Funciona el Sistema?</h2>
+            <p class="text-muted">Cada módulo cumple una función específica para asegurar que los reportes sean precisos.</p>
+            
+            <div class="accordion" id="guideAccordion">
+                
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingOne">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
+                            <i class="fas fa-building fa-fw me-3 text-primary"></i> <strong>Paso 1: Departamentos y Carteras (La Base)</strong>
+                        </button>
+                    </h2>
+                    <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#guideAccordion">
+                        <div class="accordion-body">
+                            Todo comienza aquí. Los <strong>Departamentos</strong> son las áreas oficiales de la empresa (ej. 'Callcenter', 'Administración'). Las <strong>Carteras</strong> son las campañas o proyectos a los que se asignan los grupos. Estos dos elementos son la estructura fundamental sobre la que se organiza el personal.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingTwo">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">
+                            <i class="fas fa-users fa-fw me-3 text-info"></i> <strong>Paso 2: Grupos (Los Equipos)</strong>
+                        </button>
+                    </h2>
+                    <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#guideAccordion">
+                        <div class="accordion-body">
+                            En este módulo se crean los equipos de trabajo. A cada grupo se le asigna un <strong>horario estándar</strong> y se le asocia a una cartera. La herramienta de "Administrar Empleados" con su interfaz de arrastrar y soltar es clave para definir quién pertenece a cada equipo.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingThree">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree">
+                           <i class="fas fa-calendar-alt fa-fw me-3 text-warning"></i> <strong>Paso 3: Módulo Horas (Las Excepciones)</strong>
+                        </button>
+                    </h2>
+                    <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#guideAccordion">
+                        <div class="accordion-body">
+                            Aquí se manejan todas las excepciones a la regla. ¿Un sábado se trabaja? Se asignan <strong>horas extras</strong>. ¿Un día es feriado? Se marca como <strong>feriado</strong>. ¿Un grupo debe entrar más tarde un día específico? Se define una <strong>entrada especial</strong>. Esta sección es crucial para que el sistema sepa cuándo un día no laborable se convierte en laborable y viceversa.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingFour">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour">
+                           <i class="fas fa-chart-bar fa-fw me-3 text-success"></i> <strong>Paso 4: Reportes (El Resultado Final)</strong>
+                        </button>
+                    </h2>
+                    <div id="collapseFour" class="accordion-collapse collapse" data-bs-parent="#guideAccordion">
+                        <div class="accordion-body">
+                            El corazón del sistema. El motor de reportes toma toda la información de los módulos anteriores (horarios de grupo, excepciones, permisos, justificaciones) para calcular con precisión la asistencia de cada día. Al descargar el archivo de Excel, obtendrás un <strong>resumen financiero</strong> listo para la nómina y hojas de detalle para un análisis profundo de faltas, atrasos y horas extras.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

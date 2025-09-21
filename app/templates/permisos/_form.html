@@ -1,0 +1,35 @@
+<div class="mb-3">
+    <label class="form-label">Empleado</label>
+    {% if is_edit %}
+        {# En modo edición, el campo es de solo lectura #}
+        <input type="text" id="employee_search_edit" class="form-control" readonly>
+    {% else %}
+        {# En modo creación, es un campo de búsqueda con autocompletado #}
+        <input type="text" id="employee_search" class="form-control" placeholder="Busca por nombre, apellido o pasaporte..." required>
+        <input type="hidden" id="employee_passport" name="employee_passport">
+    {% endif %}
+</div>
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <label class="form-label">Día del Permiso</label>
+        <input type="date" name="fecha" class="form-control" required>
+    </div>
+    <div class="col-md-6 mb-3">
+        <label class="form-label">Motivo</label>
+        <input type="text" name="motivo" class="form-control" required placeholder="Ej: Cita médica, Trámite personal...">
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <label class="form-label">Desde Hora</label>
+        <input type="time" name="hora_desde" class="form-control" required>
+    </div>
+    <div class="col-md-6 mb-3">
+        <label class="form-label">Hasta Hora</label>
+        <input type="time" name="hora_hasta" class="form-control" required>
+    </div>
+</div>
+<div class="mb-3">
+    <label class="form-label">Observación (Opcional)</label>
+    <textarea name="observacion" class="form-control" rows="3"></textarea>
+</div>

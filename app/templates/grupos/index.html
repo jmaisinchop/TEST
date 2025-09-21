@@ -1,0 +1,212 @@
+{% extends 'layout.html' %}
+
+{% block title %}Gestión de Grupos{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Encabezado de la sección -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2">Gestión de Grupos</h1>
+            <p class="text-muted">Cree y administre los equipos de trabajo, sus horarios y carteras asignadas.</p>
+        </div>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#crearGrupoModal">
+            <i class="fas fa-plus me-2"></i> Nuevo Grupo
+        </button>
+    </div>
+
+    <!-- Mensajes Flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Tabla de Grupos -->
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h5 class="mb-0">Listado de Grupos</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Código</th>
+                            <th>Nombre del Grupo</th>
+                            <th>Horario Estándar</th>
+                            <th>Cartera Asignada</th>
+                            <th class="text-center">Empleados</th>
+                            <th class="text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for grupo, employee_count in grupos_data %}
+                        <tr>
+                            <td><span class="badge bg-secondary fw-normal">{{ grupo.code }}</span></td>
+                            <td><strong>{{ grupo.name }}</strong></td>
+                            <td>{{ grupo.hora_entrada.strftime('%H:%M') }} - {{ grupo.hora_salida.strftime('%H:%M') }}</td>
+                            <td>
+                                {% if grupo.cartera %}
+                                    <span class="badge bg-info-subtle text-info-emphasis">{{ grupo.cartera.name }}</span>
+                                {% else %}
+                                    <span class="text-muted">Sin asignar</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <span class="badge rounded-pill bg-primary">{{ employee_count or 0 }}</span>
+                            </td>
+                            <td class="text-end">
+                                <a href="{{ url_for('grupos.detalle', grupo_id=grupo.id) }}" class="btn btn-sm btn-info">
+                                    <i class="fas fa-user-friends me-1"></i> Administrar Empleados
+                                </a>
+                                <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editarGrupoModal"
+                                        data-id="{{ grupo.id }}"
+                                        data-code="{{ grupo.code }}"
+                                        data-name="{{ grupo.name }}"
+                                        data-entrada="{{ grupo.hora_entrada.strftime('%H:%M') }}"
+                                        data-salida="{{ grupo.hora_salida.strftime('%H:%M') }}"
+                                        data-cartera="{{ grupo.cartera_id }}">
+                                    <i class="fas fa-edit me-1"></i> Editar
+                                </button>
+                                <form action="{{ url_for('grupos.eliminar', grupo_id=grupo.id) }}" method="POST" class="d-inline"
+                                      onsubmit="return confirm('ADVERTENCIA: ¿Está seguro de que quiere ELIMINAR este grupo? Esta acción también eliminará todas las asignaciones de empleados a este grupo y no se puede deshacer.');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="fas fa-trash-alt me-1"></i> Eliminar
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center p-4">
+                                <p class="mb-1">No hay grupos registrados.</p>
+                                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#crearGrupoModal">
+                                    Crear el primer grupo
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Crear Grupo -->
+<div class="modal fade" id="crearGrupoModal" tabindex="-1" aria-labelledby="crearGrupoModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="crearGrupoModalLabel">Crear Nuevo Grupo</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form action="{{ url_for('grupos.crear') }}" method="POST">
+        <div class="modal-body">
+            <div class="mb-3">
+                <label for="name" class="form-label">Nombre del Grupo</label>
+                <input type="text" class="form-control" id="name" name="name" required>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="hora_entrada" class="form-label">Hora de Entrada</label>
+                    <input type="time" class="form-control" id="hora_entrada" name="hora_entrada" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="hora_salida" class="form-label">Hora de Salida</label>
+                    <input type="time" class="form-control" id="hora_salida" name="hora_salida" required>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="cartera_id" class="form-label">Asignar a Cartera</label>
+                <select class="form-select" id="cartera_id" name="cartera_id" required>
+                    <option value="" disabled selected>Selecciona una cartera...</option>
+                    {% for cartera in carteras %}
+                        <option value="{{ cartera.id }}">{{ cartera.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Grupo</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para Editar Grupo -->
+<div class="modal fade" id="editarGrupoModal" tabindex="-1" aria-labelledby="editarGrupoModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editarGrupoModalLabel">Editar Grupo</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="editarForm" method="POST">
+        <div class="modal-body">
+            <div class="mb-3">
+                <label class="form-label">Código (no se puede cambiar)</label>
+                <input type="text" class="form-control" id="edit_code" name="code" readonly>
+            </div>
+            <div class="mb-3">
+                <label for="edit_name" class="form-label">Nombre del Grupo</label>
+                <input type="text" class="form-control" id="edit_name" name="name" required>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="edit_hora_entrada" class="form-label">Hora de Entrada</label>
+                    <input type="time" class="form-control" id="edit_hora_entrada" name="hora_entrada" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="edit_hora_salida" class="form-label">Hora de Salida</label>
+                    <input type="time" class="form-control" id="edit_hora_salida" name="hora_salida" required>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="edit_cartera_id" class="form-label">Asignar a Cartera</label>
+                <select class="form-select" id="edit_cartera_id" name="cartera_id" required>
+                    <option value="" disabled>Selecciona una cartera...</option>
+                    {% for cartera in carteras %}
+                        <option value="{{ cartera.id }}">{{ cartera.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const editarModal = document.getElementById('editarGrupoModal');
+    if (editarModal) {
+        editarModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const grupoId = button.getAttribute('data-id');
+
+            const form = document.getElementById('editarForm');
+            form.action = `/grupos/editar/${grupoId}`;
+
+            form.querySelector('#edit_code').value = button.getAttribute('data-code');
+            form.querySelector('#edit_name').value = button.getAttribute('data-name');
+            form.querySelector('#edit_hora_entrada').value = button.getAttribute('data-entrada');
+            form.querySelector('#edit_hora_salida').value = button.getAttribute('data-salida');
+            form.querySelector('#edit_cartera_id').value = button.getAttribute('data-cartera');
+        });
+    }
+</script>
+{% endblock %}

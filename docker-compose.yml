@@ -1,0 +1,20 @@
+# ✨ CORRECCIÓN: Se elimina la línea 'version' que es obsoleta
+services:
+  # Servicio de la aplicación web Flask
+  web:
+    build: .
+    container_name: finsolred_app
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+    environment:
+      # ¡IMPORTANTE! Estas variables deben apuntar a tu servidor de BD externo
+      # Asegúrate de que estas variables estén definidas en tu archivo .env
+      - DB_HOST=${DB_HOST} # <-- Esta debe ser la IP de tu servidor de BD
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - FLASK_APP=run.py
+      - FLASK_ENV=development
+      - SECRET_KEY=${SECRET_KEY}

@@ -1,0 +1,145 @@
+{% extends 'layout.html' %}
+
+{% block title %}Reporte de Asistencia{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0">Reporte de Asistencia</h1>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        Filtros del Reporte
+    </div>
+    <div class="card-body">
+        <form method="GET" class="row g-3 align-items-end" id="reportForm" action="{{ url_for('reportes.index') }}">
+            <!-- Filtros de Fecha y Departamento (sin cambios) -->
+            <div class="col-md-3">
+                <label for="fecha_desde" class="form-label">Desde</label>
+                <input type="date" class="form-control" id="fecha_desde" name="fecha_desde" value="{{ request.args.get('fecha_desde', '') }}" required>
+            </div>
+            <div class="col-md-3">
+                <label for="fecha_hasta" class="form-label">Hasta</label>
+                <input type="date" class="form-control" id="fecha_hasta" name="fecha_hasta" value="{{ request.args.get('fecha_hasta', '') }}" required>
+            </div>
+            <div class="col-md-4">
+                <label for="departamento_id" class="form-label">Departamento</label>
+                <select class="form-select" id="departamento_id" name="departamento_id">
+                    <option value="">Todos los Departamentos</option>
+                    {% for depto in departamentos %}
+                        <option value="{{ depto.id }}" {% if departamento_seleccionado == depto.id|string %}selected{% endif %}>
+                            {{ depto.dept_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Generar Vista Previa</button>
+            </div>
+
+            <!-- SECCIÓN DE COSTOS Y MULTAS (ACTUALIZADA) -->
+            <div class="col-12"><hr></div>
+            <div class="col-md-3">
+                <label for="costo_hora_normal" class="form-label">Costo H. Extra (Normal)</label>
+                <input type="number" step="0.01" class="form-control" id="costo_hora_normal" name="costo_hora_normal" value="{{ request.args.get('costo_hora_normal', '0.00') }}">
+            </div>
+            <div class="col-md-3">
+                <label for="costo_hora_sabfer" class="form-label">Costo H. Extra (Sáb/Fer)</label>
+                <input type="number" step="0.01" class="form-control" id="costo_hora_sabfer" name="costo_hora_sabfer" value="{{ request.args.get('costo_hora_sabfer', '0.00') }}">
+            </div>
+            <div class="col-md-3">
+                <label for="multa_atraso_normal" class="form-label">Multa por Atraso (Normal)</label>
+                <input type="number" step="0.01" class="form-control" id="multa_atraso_normal" name="multa_atraso_normal" value="{{ request.args.get('multa_atraso_normal', '0.00') }}">
+            </div>
+             <div class="col-md-3">
+                <label for="multa_atraso_sabfer" class="form-label">Multa por Atraso (Sáb/Fer)</label>
+                <input type="number" step="0.01" class="form-control" id="multa_atraso_sabfer" name="multa_atraso_sabfer" value="{{ request.args.get('multa_atraso_sabfer', '0.00') }}">
+            </div>
+            <div class="col-md-3">
+                <label for="multa_falta_normal" class="form-label">Multa por Falta (Normal)</label>
+                <input type="number" step="0.01" class="form-control" id="multa_falta_normal" name="multa_falta_normal" value="{{ request.args.get('multa_falta_normal', '0.00') }}">
+            </div>
+            <div class="col-md-3">
+                <label for="multa_falta_sabfer" class="form-label">Multa por Falta (Sáb/Fer)</label>
+                <input type="number" step="0.01" class="form-control" id="multa_falta_sabfer" name="multa_falta_sabfer" value="{{ request.args.get('multa_falta_sabfer', '0.00') }}">
+            </div>
+            <div class="col-md-6 mt-3 text-end align-self-end">
+                <a id="downloadExcelBtn" class="btn btn-success">
+                    <i class="fas fa-file-excel"></i> Descargar Reporte Completo
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Vista previa en HTML (sin cambios) -->
+{% if resultados is not none %}
+    {% if resultados %}
+        {% for item in resultados %}
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between">
+                <span><strong>Empleado:</strong> {{ item.empleado.first_name }} {{ item.empleado.last_name }}</span>
+                <span><strong>Departamento:</strong> {{ item.empleado.department.dept_name }}</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered table-striped mb-0" style="font-size: 0.85rem;">
+                        <thead class="table-light text-center">
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Día</th>
+                                <th>Horario Prog.</th>
+                                <th>Marcaciones</th>
+                                <th>Estado</th>
+                                <th>Min. Atraso</th>
+                                <th>T. Trabajado</th>
+                                <th>H. Extras</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-center">
+                            {% for registro in item.registros %}
+                            <tr class="{{ {'Falta': 'table-danger', 'Atraso': 'table-warning', 'Justificado': 'table-info', 'Permiso': 'table-info'}.get(registro.estado, '') }}">
+                                <td>{{ registro.fecha.strftime('%d-%m-%Y') }}</td>
+                                <td>{{ ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'][registro.fecha.weekday()] }}</td>
+                                <td>{{ registro.horario_prog }}</td>
+                                <td>{{ registro.marcaciones }}</td>
+                                <td><span class="badge {{ {'Falta': 'bg-danger', 'Atraso': 'bg-warning text-dark', 'Justificado': 'bg-info text-dark', 'Permiso': 'bg-info text-dark', 'Presente': 'bg-success'}.get(registro.estado, 'bg-secondary') }}">{{ registro.estado }}</span></td>
+                                <td>{% if registro.minutos_atraso > 0 %}{{ registro.minutos_atraso }}{% else %}-{% endif %}</td>
+                                <td>{{ registro.tiempo_trabajado }}</td>
+                                <td>{{ registro.horas_extras_trabajadas }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="alert alert-warning text-center">No se encontraron empleados o datos para los filtros seleccionados.</div>
+    {% endif %}
+{% else %}
+    <div class="alert alert-secondary text-center">Seleccione un rango de fechas y haga clic en "Generar Vista Previa".</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('downloadExcelBtn').addEventListener('click', function(e) {
+    e.preventDefault();
+    const form = document.getElementById('reportForm');
+    const fecha_desde = form.querySelector('#fecha_desde').value;
+    const fecha_hasta = form.querySelector('#fecha_hasta').value;
+
+    if (!fecha_desde || !fecha_hasta) {
+        alert('Por favor, selecciona un rango de fechas para generar el reporte.');
+        return;
+    }
+
+    const params = new URLSearchParams(new FormData(form));
+
+    window.location.href = `{{ url_for('reportes.descargar_excel') }}?${params.toString()}`;
+});
+</script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+{% endblock %}

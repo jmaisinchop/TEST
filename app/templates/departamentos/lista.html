@@ -1,0 +1,53 @@
+{% extends 'layout.html' %}
+
+{% block title %}Lista de Departamentos{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Encabezado de la sección -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h2">Departamentos Clave</h1>
+            <p class="text-muted">Visualización de los departamentos operativos principales y su personal asignado.</p>
+        </div>
+    </div>
+
+    <!-- Tarjetas de Departamentos -->
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        {% for depto, employee_count in departamentos %}
+            <div class="col">
+                <div class="card h-100 shadow-sm border-light-subtle text-center">
+                    <div class="card-body d-flex flex-column justify-content-center p-4">
+                        <div class="mb-3">
+                            {# Asignamos un ícono diferente a cada departamento para una mejor identificación visual #}
+                            {% if depto.dept_name == 'Callcenter' %}
+                                <i class="fas fa-headset fa-3x text-primary"></i>
+                            {% elif depto.dept_name == 'Administracion' %}
+                                <i class="fas fa-user-tie fa-3x text-success"></i>
+                            {% elif depto.dept_name == 'Guayaquil' %}
+                                <i class="fas fa-map-marked-alt fa-3x text-info"></i>
+                            {% else %}
+                                <i class="fas fa-building fa-3x text-secondary"></i>
+                            {% endif %}
+                        </div>
+                        <h5 class="card-title">{{ depto.dept_name }}</h5>
+                        <p class="card-text text-muted small">ID del Depto: {{ depto.id }}</p>
+
+                        {# El contador de empleados se muestra de forma prominente #}
+                        <div class="mt-auto pt-3">
+                            <h3 class="display-6 fw-bold mb-0">{{ employee_count }}</h3>
+                            <p class="mb-0 text-muted">Empleados Asignados</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="col-12">
+                <div class="alert alert-warning text-center" role="alert">
+                    No se encontraron los departamentos especificados ('Callcenter', 'Guayaquil', 'Administracion'). Por favor, verifique que existan en la base de datos.
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,91 @@
+{% extends 'layout.html' %}
+
+{% block title %}Carga Masiva de Asignaciones{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Encabezado de la sección -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2">Herramienta de Carga Masiva</h1>
+            <p class="text-muted">Asigne empleados a grupos y configure horarios especiales de forma masiva.</p>
+        </div>
+    </div>
+
+    <!-- Mensajes Flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="row">
+        <div class="col-lg-7">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0">Subir Archivo de Asignación</h5>
+                </div>
+                <div class="card-body">
+                    <p>Siga los pasos a continuación para procesar su archivo de Excel.</p>
+                    <form action="{{ url_for('asignacion_masiva.procesar_excel') }}" method="POST" enctype="multipart/form-data">
+                        <div class="d-flex align-items-center p-3 mb-3 bg-light rounded border">
+                            <div class="fs-3 me-3">1</div>
+                            <div>
+                                <strong>Descargue la Plantilla</strong><br>
+                                Use el formato exacto para evitar errores.
+                            </div>
+                            <a href="{{ url_for('asignacion_masiva.descargar_plantilla') }}" class="btn btn-outline-success ms-auto">
+                                <i class="fas fa-download me-2"></i>Descargar
+                            </a>
+                        </div>
+
+                        <div class="d-flex align-items-center p-3 mb-3 bg-light rounded border">
+                            <div class="fs-3 me-3">2</div>
+                            <div>
+                                <strong>Llene los Datos</strong><br>
+                                Complete la plantilla con la información de los empleados, grupos y horarios.
+                            </div>
+                        </div>
+
+                        <div class="d-flex align-items-center p-3 mb-3 bg-light rounded border">
+                            <div class="fs-3 me-3">3</div>
+                            <div class="flex-grow-1">
+                                <strong>Suba el Archivo</strong><br>
+                                <input class="form-control mt-2" type="file" id="archivo_excel" name="archivo_excel" accept=".xlsx" required>
+                            </div>
+                        </div>
+                        
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-cogs me-2"></i> Procesar Archivo
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="card shadow-sm">
+                 <div class="card-header">
+                    <h5 class="mb-0">¿Cómo Funciona?</h5>
+                </div>
+                <div class="card-body">
+                    <p>Esta herramienta automatiza varias tareas en un solo paso:</p>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item"><i class="fas fa-check-circle text-success me-2"></i><strong>Validación de Empleados:</strong> Verifica que cada pasaporte exista en la base de datos.</li>
+                        <li class="list-group-item"><i class="fas fa-check-circle text-success me-2"></i><strong>Creación Automática:</strong> Si una Cartera o Grupo mencionado en el archivo no existe, el sistema lo creará automáticamente.</li>
+                        <li class="list-group-item"><i class="fas fa-check-circle text-success me-2"></i><strong>Asignación Inteligente:</strong> Asigna cada empleado al grupo especificado. Si ya está asignado, lo ignora.</li>
+                        <li class="list-group-item"><i class="fas fa-check-circle text-success me-2"></i><strong>Horarios Especiales:</strong> Si se proporcionan fechas y horas, se crearán o actualizarán los registros de horarios especiales para el grupo correspondiente.</li>
+                        <li class="list-group-item"><i class="fas fa-exclamation-triangle text-warning me-2"></i><strong>Manejo de Errores:</strong> El sistema procesará todas las filas válidas e informará cuántas tuvieron errores (ej. pasaporte no encontrado, formato de fecha incorrecto).</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

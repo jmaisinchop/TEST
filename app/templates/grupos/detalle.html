@@ -1,0 +1,321 @@
+{% extends 'layout.html' %}
+
+{% block title %}Detalle del Grupo: {{ grupo.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Encabezado Mejorado con Detalles del Grupo -->
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+        <div>
+            <h1 class="h2 mb-1">
+                <i class="fas fa-users-cog text-primary me-2"></i>
+                Grupo: <strong>{{ grupo.name }}</strong>
+            </h1>
+            <div class="d-flex align-items-center text-muted small gap-3 mt-2">
+                <span><span class="badge bg-secondary fw-normal">{{ grupo.code }}</span></span>
+                <span><i class="fas fa-clock me-1"></i> Horario: {{ grupo.hora_entrada.strftime('%H:%M') }} - {{ grupo.hora_salida.strftime('%H:%M') }}</span>
+                {% if grupo.cartera %}
+                    <span><i class="fas fa-wallet me-1"></i> Cartera: {{ grupo.cartera.name }}</span>
+                {% endif %}
+            </div>
+        </div>
+        <a href="{{ url_for('grupos.index') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Volver a Grupos
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <!-- Columna de Empleados Disponibles -->
+        <div class="col-lg-5">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-user-plus text-success me-2"></i> Empleados Disponibles (<span id="countDisponibles">0</span>)</h5>
+                    <button id="selectAllDisponibles" class="btn btn-sm btn-outline-secondary">Seleccionar Todos</button>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <input type="text" id="filtroDisponibles" class="form-control" placeholder="Buscar en disponibles...">
+                    </div>
+                    <div id="empleadosDisponibles" class="dropzone list-container">
+                        {% for empleado in empleados_disponibles %}
+                            <div class="empleado-item" draggable="true" data-passport="{{ empleado.passport }}">
+                                <i class="fas fa-user-circle fa-2x text-muted me-3"></i>
+                                <div class="flex-grow-1">
+                                    <strong>{{ empleado.first_name }} {{ empleado.last_name }}</strong>
+                                    <div class="small text-muted">
+                                        <span>Pasaporte: {{ empleado.passport }}</span> | <span>Depto: {{ empleado.department.dept_name }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <p class="text-center text-muted mt-3 placeholder-text">No hay más empleados disponibles.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Columna de Botones de Acción -->
+        <div class="col-lg-2 d-flex flex-column align-items-center justify-content-center">
+            <div id="loadingIndicator" style="display: none;" class="spinner-border text-primary mb-3" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <button id="btnAgregar" class="btn btn-success mb-3 w-100" title="Agregar seleccionados al grupo">
+                <i class="fas fa-arrow-right me-2"></i> Agregar
+            </button>
+            <button id="btnQuitar" class="btn btn-danger w-100" title="Quitar seleccionados del grupo">
+                <i class="fas fa-arrow-left me-2"></i> Quitar
+            </button>
+        </div>
+
+        <!-- Columna de Empleados en el Grupo -->
+        <div class="col-lg-5">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-users text-primary me-2"></i> Empleados en este Grupo (<span id="countEnGrupo">0</span>)</h5>
+                    <button id="selectAllInGroup" class="btn btn-sm btn-outline-secondary">Seleccionar Todos</button>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <input type="text" id="filtroEnGrupo" class="form-control" placeholder="Buscar en este grupo...">
+                    </div>
+                    <div id="empleadosEnGrupo" class="dropzone list-container">
+                        {% for empleado in empleados_en_grupo %}
+                            <div class="empleado-item" draggable="true" data-passport="{{ empleado.passport }}">
+                                <i class="fas fa-user-circle fa-2x text-muted me-3"></i>
+                                <div class="flex-grow-1">
+                                    <strong>{{ empleado.first_name }} {{ empleado.last_name }}</strong>
+                                    <div class="small text-muted">
+                                        <span>Pasaporte: {{ empleado.passport }}</span> | <span>Depto: {{ empleado.department.dept_name }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <p class="text-center text-muted mt-3 placeholder-text">Arrastra o agrega empleados a este grupo.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<style>
+    .list-container {
+        height: 50vh;
+        max-height: 600px;
+        overflow-y: auto;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        padding: 1rem;
+        border-radius: 0.375rem;
+    }
+    .dropzone.drag-over {
+        background-color: #e9ecef;
+        border-style: dashed;
+    }
+    .empleado-item {
+        padding: 0.75rem 1rem;
+        background-color: #fff;
+        border: 1px solid #e9ecef;
+        border-radius: 0.375rem;
+        margin-bottom: 0.5rem;
+        cursor: pointer;
+        user-select: none;
+        transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
+        display: flex;
+        align-items: center;
+    }
+    .empleado-item:hover {
+        border-color: #9ec5fe;
+        background-color: #fafdff;
+    }
+    .empleado-item.selected {
+        background-color: #cfe2ff;
+        border-color: #0d6efd;
+        transform: scale(1.02);
+    }
+    .empleado-item:active {
+        cursor: grabbing;
+        background-color: #e2e6ea;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const grupoId = "{{ grupo.id }}";
+    const enGrupoList = document.getElementById('empleadosEnGrupo');
+    const disponiblesList = document.getElementById('empleadosDisponibles');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    let draggedItem = null;
+
+    // --- 1. Funciones de UI (Contadores y Placeholders) ---
+    function updateCounters() {
+        document.getElementById('countEnGrupo').textContent = enGrupoList.querySelectorAll('.empleado-item').length;
+        document.getElementById('countDisponibles').textContent = disponiblesList.querySelectorAll('.empleado-item').length;
+    }
+
+    function updatePlaceholders() {
+        document.querySelectorAll('.dropzone').forEach(zone => {
+            const placeholder = zone.querySelector('.placeholder-text');
+            if (placeholder) {
+                placeholder.style.display = zone.querySelectorAll('.empleado-item').length === 0 ? 'block' : 'none';
+            }
+        });
+    }
+
+    // --- 2. Funcionalidad de Búsqueda y Filtrado ---
+    function setupFilter(inputId, list) {
+        document.getElementById(inputId).addEventListener('keyup', function() {
+            const filterValue = this.value.toLowerCase().trim();
+            const items = list.querySelectorAll('.empleado-item');
+            items.forEach(item => {
+                const itemText = item.textContent.toLowerCase();
+                item.style.display = itemText.includes(filterValue) ? 'flex' : 'none';
+            });
+        });
+    }
+
+    // --- 3. Funcionalidad de Selección (Click y Seleccionar Todos) ---
+    function setupSelection(list) {
+        list.addEventListener('click', function(e) {
+            const item = e.target.closest('.empleado-item');
+            if (item) {
+                e.preventDefault();
+                item.classList.toggle('selected');
+            }
+        });
+    }
+
+    function setupSelectAll(buttonId, list) {
+        document.getElementById(buttonId).addEventListener('click', () => {
+            const items = list.querySelectorAll('.empleado-item:not([style*="display: none"])');
+            const allVisibleSelected = items.length > 0 && Array.from(items).every(i => i.classList.contains('selected'));
+            items.forEach(item => {
+                item.classList.toggle('selected', !allVisibleSelected);
+            });
+        });
+    }
+
+    // --- 4. Lógica de Movimiento (Botones y Fetch API) ---
+    // ✨ CORRECCIÓN: La función ahora recibe la URL de la acción en lote directamente
+    async function moveItems(fromList, toList, bulkUrl) {
+        const selectedItems = fromList.querySelectorAll('.empleado-item.selected');
+        if (selectedItems.length === 0) {
+            alert('Por favor, selecciona al menos un empleado para mover.');
+            return;
+        }
+
+        loadingIndicator.style.display = 'block';
+        const passports = Array.from(selectedItems).map(item => item.dataset.passport);
+
+        try {
+            const response = await fetch(bulkUrl, { // Se usa la URL directa
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ passports })
+            });
+
+            if (!response.ok) throw new Error(`Error del servidor: ${response.statusText}`);
+
+            const data = await response.json();
+            if (data.success) {
+                selectedItems.forEach(item => {
+                    item.classList.remove('selected');
+                    toList.prepend(item);
+                });
+            } else {
+                alert('Error: ' + (data.error || 'Ocurrió un error desconocido.'));
+            }
+        } catch (error) {
+            console.error('Error en la petición:', error);
+            alert('Ocurrió un error de red. Revisa la consola para más detalles.');
+        } finally {
+            loadingIndicator.style.display = 'none';
+            updateCounters();
+            updatePlaceholders();
+        }
+    }
+
+    // --- 5. Lógica de Arrastrar y Soltar (Drag and Drop) ---
+    function setupDragAndDrop(item) {
+        item.addEventListener('dragstart', function() {
+            draggedItem = this;
+            setTimeout(() => { this.style.opacity = '0.5'; }, 0);
+        });
+
+        item.addEventListener('dragend', function() {
+            setTimeout(() => {
+                if(this) this.style.opacity = '1';
+                draggedItem = null;
+            }, 0);
+        });
+    }
+
+    document.querySelectorAll('.dropzone').forEach(zone => {
+        zone.addEventListener('dragover', e => {
+            e.preventDefault();
+            zone.classList.add('drag-over');
+        });
+        zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+        zone.addEventListener('drop', async function(e) {
+            e.preventDefault();
+            zone.classList.remove('drag-over');
+            const itemToMove = draggedItem;
+            if (itemToMove && this !== itemToMove.parentNode) {
+                const isAdding = this.id === 'empleadosEnGrupo';
+                const url = isAdding ? `/grupos/${grupoId}/agregar_empleado` : `/grupos/${grupoId}/quitar_empleado`;
+
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: `employee_passport=${itemToMove.dataset.passport}`
+                    });
+
+                    if (!response.ok) throw new Error('Error en la respuesta del servidor');
+
+                    const data = await response.json();
+                    if (data.success) {
+                        this.prepend(itemToMove);
+                        updateCounters();
+                        updatePlaceholders();
+                    } else {
+                        alert('Error: ' + (data.error || 'No se pudo mover el empleado.'));
+                    }
+                } catch (error) {
+                    console.error('Error en D&D fetch:', error);
+                    alert('Error de red al arrastrar y soltar.');
+                }
+            }
+        });
+    });
+
+    // --- Inicialización ---
+    updateCounters();
+    updatePlaceholders();
+
+    setupFilter('filtroDisponibles', disponiblesList);
+    setupFilter('filtroEnGrupo', enGrupoList);
+
+    setupSelection(disponiblesList);
+    setupSelection(enGrupoList);
+
+    setupSelectAll('selectAllDisponibles', disponiblesList);
+    setupSelectAll('selectAllInGroup', enGrupoList);
+
+    document.querySelectorAll('.empleado-item').forEach(setupDragAndDrop);
+
+    // ✨ CORRECCIÓN: Se llama a moveItems con la URL de la acción en lote correcta
+    document.getElementById('btnAgregar').addEventListener('click', () => {
+        moveItems(disponiblesList, enGrupoList, `/grupos/${grupoId}/agregar_empleados_bulk`);
+    });
+
+    document.getElementById('btnQuitar').addEventListener('click', () => {
+        moveItems(enGrupoList, disponiblesList, `/grupos/${grupoId}/quitar_empleados_bulk`);
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,30 @@
+<div class="col-md-2">
+    <label class="form-label">Aplicar a:</label>
+    <select name="tipo" class="form-select tipo-selector" required>
+        <option value="" selected disabled>Seleccionar...</option>
+        <option value="grupo">Grupo</option>
+        <option value="departamento">Departamento</option>
+    </select>
+</div>
+<div class="col-md-3">
+    <div class="grupo-select-div" style="display: none;">
+        <label class="form-label">Grupo específico</label>
+        <select name="objeto_id_grupo" class="form-select">
+            {% for g in grupos %}
+            <option value="{{ g.id }}">{{ g.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="depto-select-div" style="display: none;">
+        <label class="form-label">Departamento específico</label>
+        <select name="objeto_id_depto" class="form-select">
+            {% for d in departamentos %}
+            <option value="{{ d.id }}">{{ d.dept_name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+<div class="col-md-2">
+    <label class="form-label">Fecha</label>
+    <input type="date" name="fecha" class="form-control" required>
+</div>

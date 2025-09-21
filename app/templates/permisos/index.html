@@ -1,0 +1,244 @@
+{% extends 'layout.html' %}
+
+{% block title %}Gestión de Permisos{% endblock %}
+
+{% block content %}
+<style>
+    .ui-autocomplete { z-index: 1056 !important; }
+    .employee-header {
+        background-color: #f8f9fa;
+        font-weight: 600;
+    }
+    .table-hover tbody tr:hover {
+        background-color: #f1f1f1;
+    }
+    .form-select[multiple] {
+        height: 120px;
+    }
+</style>
+
+<div class="container-fluid">
+    <!-- Encabezado de la sección -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2">Gestión de Permisos por Horas</h1>
+            <p class="text-muted">Administre los permisos por horas del personal.</p>
+        </div>
+        <div class="btn-group">
+            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#cargaMasivaModal">
+                <i class="fas fa-file-excel me-2"></i> Carga Masiva
+            </button>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#crearPermisoModal">
+                <i class="fas fa-plus me-2"></i> Nuevo Permiso
+            </button>
+        </div>
+    </div>
+
+    <!-- Filtros y Descarga -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <form id="filterForm" method="GET" class="row g-3 align-items-end">
+                <div class="col-lg-3 col-md-6">
+                    <label for="q" class="form-label">Buscar Empleado</label>
+                    <input type="text" name="q" id="q" class="form-control" placeholder="Nombre, pasaporte..." value="{{ q or '' }}">
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <label for="depto_id" class="form-label">Departamento(s)</label>
+                    <select name="depto_id" id="depto_id" class="form-select" multiple>
+                        {% for depto in departamentos %}
+                            <option value="{{ depto.id }}" {% if depto.id in depto_ids_seleccionados %}selected{% endif %}>
+                                {{ depto.dept_name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <small class="form-text text-muted">Mantén Ctrl/Cmd para seleccionar varios.</small>
+                </div>
+                <div class="col-lg-2 col-md-6">
+                    <label for="desde" class="form-label">Desde Fecha</label>
+                    <input type="date" name="desde" id="desde" class="form-control" value="{{ desde or '' }}">
+                </div>
+                <div class="col-lg-2 col-md-6">
+                    <label for="hasta" class="form-label">Hasta Fecha</label>
+                    <input type="date" name="hasta" id="hasta" class="form-control" value="{{ hasta or '' }}">
+                </div>
+                <div class="col-lg-2 col-md-12 d-flex">
+                    <button type="submit" class="btn btn-secondary w-100 me-2">Filtrar</button>
+                    <button type="button" id="downloadReportBtn" class="btn btn-outline-success" title="Descargar Reporte Filtrado">
+                        <i class="fas fa-download"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Mensajes Flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Tabla de Permisos -->
+    <div class="card shadow-sm">
+        <div class="card-header"><h5 class="mb-0">Listado de Permisos</h5></div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Horario del Permiso</th>
+                            <th>Motivo</th>
+                            <th>Observación</th>
+                            <th class="text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for (passport, name, dept), permisos_empleado in agrupado.items() %}
+                            <tr class="employee-header">
+                                <td colspan="5" class="p-3">
+                                    <i class="fas fa-user me-2 text-primary"></i>{{ name }}
+                                    <small class="text-muted">({{ passport }})</small>
+                                    <span class="badge bg-secondary-subtle text-secondary-emphasis fw-normal ms-2">{{ dept }}</span>
+                                </td>
+                            </tr>
+                            {% for p in permisos_empleado %}
+                            <tr>
+                                <td>{{ p.fecha.strftime('%d-%m-%Y') }}</td>
+                                <td>{{ p.hora_desde.strftime('%H:%M') }} - {{ p.hora_hasta.strftime('%H:%M') }}</td>
+                                <td>{{ p.motivo }}</td>
+                                <td>{{ p.observacion }}</td>
+                                <td class="text-end">
+                                    <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editarPermisoModal"
+                                        data-id="{{ p.id }}" data-empleado-label="{{ name }} ({{passport}})"
+                                        data-fecha="{{ p.fecha.strftime('%Y-%m-%d') }}" data-desde="{{ p.hora_desde.strftime('%H:%M') }}"
+                                        data-hasta="{{ p.hora_hasta.strftime('%H:%M') }}" data-motivo="{{ p.motivo }}"
+                                        data-observacion="{{ p.observacion or '' }}">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <form action="{{ url_for('permisos.eliminar', permiso_id=p.id) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Estás seguro de que quieres ELIMINAR este permiso?')">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash-alt"></i></button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center p-4 text-muted">No hay permisos que coincidan con los filtros.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Carga Masiva -->
+<div class="modal fade" id="cargaMasivaModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Carga Masiva de Permisos</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <form action="{{ url_for('permisos.cargar_excel') }}" method="POST" enctype="multipart/form-data">
+        <div class="modal-body">
+            <div class="alert alert-info"><p class="mb-1"><strong>Instrucciones:</strong></p><ol class="mb-0 ps-3"><li>Descargue la plantilla de Excel.</li><li>Llene las columnas: <strong>Pasaporte, Fecha, Hora_Desde, Hora_Hasta, Motivo, Observacion</strong>.</li><li>Guarde y suba el archivo.</li></ol></div>
+            <div class="mb-3"><a href="{{ url_for('permisos.descargar_plantilla') }}" class="btn btn-sm btn-outline-success"><i class="fas fa-download me-2"></i> Descargar Plantilla</a></div>
+            <div class="mb-3"><label for="archivo_excel_permisos" class="form-label">Seleccionar archivo .xlsx</label><input class="form-control" type="file" id="archivo_excel_permisos" name="archivo_excel" accept=".xlsx" required></div>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-primary">Subir y Procesar</button></div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para Crear Permiso -->
+<div class="modal fade" id="crearPermisoModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Crear Nuevo Permiso</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <form action="{{ url_for('permisos.crear') }}" method="POST">
+        <div class="modal-body">
+            <div class="mb-3"><label for="employee_search_permiso" class="form-label">Empleado</label><input type="text" class="form-control" id="employee_search_permiso" placeholder="Busca por nombre, apellido o pasaporte..." required><input type="hidden" id="employee_passport_permiso" name="employee_passport"></div>
+            <div class="row"><div class="col-md-6 mb-3"><label for="fecha_permiso" class="form-label">Día del Permiso</label><input type="date" class="form-control" id="fecha_permiso" name="fecha" required></div><div class="col-md-6 mb-3"><label for="motivo_permiso" class="form-label">Motivo</label><input type="text" class="form-control" id="motivo_permiso" name="motivo" required placeholder="Ej: Cita médica, Trámite personal..."></div></div>
+            <div class="row"><div class="col-md-6 mb-3"><label for="hora_desde_permiso" class="form-label">Desde Hora</label><input type="time" class="form-control" id="hora_desde_permiso" name="hora_desde" required></div><div class="col-md-6 mb-3"><label for="hora_hasta_permiso" class="form-label">Hasta Hora</label><input type="time" class="form-control" id="hora_hasta_permiso" name="hora_hasta" required></div></div>
+            <div class="mb-3"><label for="observacion_permiso" class="form-label">Observación (Opcional)</label><textarea class="form-control" id="observacion_permiso" name="observacion" rows="3"></textarea></div>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-primary">Guardar Permiso</button></div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para Editar Permiso -->
+<div class="modal fade" id="editarPermisoModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Editar Permiso</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <form id="editarPermisoForm" method="POST">
+        <div class="modal-body">
+            <div class="mb-3"><label class="form-label">Empleado</label><input type="text" id="edit_employee_search_permiso" class="form-control" readonly></div>
+            <div class="row"><div class="col-md-6 mb-3"><label for="edit_fecha_permiso" class="form-label">Día del Permiso</label><input type="date" class="form-control" id="edit_fecha_permiso" name="fecha" required></div><div class="col-md-6 mb-3"><label for="edit_motivo_permiso" class="form-label">Motivo</label><input type="text" class="form-control" id="edit_motivo_permiso" name="motivo" required></div></div>
+            <div class="row"><div class="col-md-6 mb-3"><label for="edit_hora_desde_permiso" class="form-label">Desde Hora</label><input type="time" class="form-control" id="edit_hora_desde_permiso" name="hora_desde" required></div><div class="col-md-6 mb-3"><label for="edit_hora_hasta_permiso" class="form-label">Hasta Hora</label><input type="time" class="form-control" id="edit_hora_hasta_permiso" name="hora_hasta" required></div></div>
+            <div class="mb-3"><label for="edit_observacion_permiso" class="form-label">Observación</label><textarea class="form-control" id="edit_observacion_permiso" name="observacion" rows="3"></textarea></div>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-primary">Guardar Cambios</button></div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+<script src="https://code.jquery.com/jquery-3.6.0.js"></script>
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
+
+<script>
+$(document).ready(function() {
+    // Autocompletado para el modal de CREACIÓN de permisos
+    $("#employee_search_permiso").autocomplete({
+        source: "{{ url_for('permisos.buscar_empleados') }}",
+        minLength: 2,
+        select: function(event, ui) {
+            $("#employee_search_permiso").val(ui.item.label);
+            $("#employee_passport_permiso").val(ui.item.value);
+            return false;
+        }
+    });
+
+    // Lógica para llenar el modal de EDICIÓN de permisos
+    const editarPermisoModal = document.getElementById('editarPermisoModal');
+    editarPermisoModal.addEventListener('show.bs.modal', event => {
+        const button = event.relatedTarget;
+        const data = button.dataset;
+        const form = document.getElementById('editarPermisoForm');
+        form.action = `/permisos/editar/${data.id}`;
+        form.querySelector('#edit_employee_search_permiso').value = data.empleadoLabel;
+        form.querySelector('#edit_fecha_permiso').value = data.fecha;
+        form.querySelector('#edit_hora_desde_permiso').value = data.desde;
+        form.querySelector('#edit_hora_hasta_permiso').value = data.hasta;
+        form.querySelector('#edit_motivo_permiso').value = data.motivo;
+        form.querySelector('#edit_observacion_permiso').value = data.observacion;
+    });
+
+    // JavaScript para el botón de descarga
+    document.getElementById('downloadReportBtn').addEventListener('click', function() {
+        const form = document.getElementById('filterForm');
+        const params = new URLSearchParams();
+        params.append('q', form.querySelector('#q').value);
+        params.append('desde', form.querySelector('#desde').value);
+        params.append('hasta', form.querySelector('#hasta').value);
+        const deptoSelect = form.querySelector('#depto_id');
+        for (const option of deptoSelect.selectedOptions) {
+            params.append('depto_id', option.value);
+        }
+        window.location.href = `{{ url_for('permisos.descargar_reporte') }}?${params.toString()}`;
+    });
+});
+</script>
+{% endblock %}

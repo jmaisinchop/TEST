@@ -1,0 +1,148 @@
+{% extends 'layout.html' %}
+
+{% block title %}Gestión de Carteras{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Encabezado de la sección -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2">Gestión de Carteras</h1>
+            <p class="text-muted">Cree y administre las carteras o proyectos a los que se asignan los grupos.</p>
+        </div>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#crearCarteraModal">
+            <i class="fas fa-plus me-2"></i> Nueva Cartera
+        </button>
+    </div>
+
+    <!-- Mensajes Flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Tarjetas de Carteras -->
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        {% for cartera in carteras %}
+        <div class="col">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-wallet me-2 text-primary"></i> {{ cartera.name }}</span>
+                        <span class="badge bg-secondary fw-normal">{{ cartera.code }}</span>
+                    </h5>
+                    <p class="card-text text-muted">{{ cartera.description or 'Sin descripción.' }}</p>
+                </div>
+                <div class="card-footer bg-white border-0 text-end pb-3">
+                    <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editarCarteraModal"
+                            data-id="{{ cartera.id }}"
+                            data-code="{{ cartera.code }}"
+                            data-name="{{ cartera.name }}"
+                            data-description="{{ cartera.description or '' }}">
+                        <i class="fas fa-edit me-1"></i> Editar
+                    </button>
+                    <form action="{{ url_for('carteras.anular', cartera_id=cartera.id) }}" method="POST" class="d-inline"
+                          onsubmit="return confirm('¿Estás seguro de que quieres anular esta cartera?');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                            <i class="fas fa-times-circle me-1"></i> Anular
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="alert alert-info text-center">
+                No hay carteras activas. ¡Crea la primera!
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Modal para Crear Cartera -->
+<div class="modal fade" id="crearCarteraModal" tabindex="-1" aria-labelledby="crearCarteraModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="crearCarteraModalLabel">Crear Nueva Cartera</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form action="{{ url_for('carteras.crear') }}" method="POST">
+        <div class="modal-body">
+            <div class="mb-3">
+                <label for="name" class="form-label">Nombre de la Cartera</label>
+                <input type="text" class="form-control" id="name" name="name" required>
+            </div>
+            <div class="mb-3">
+                <label for="description" class="form-label">Descripción (Opcional)</label>
+                <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Cartera</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para Editar Cartera -->
+<div class="modal fade" id="editarCarteraModal" tabindex="-1" aria-labelledby="editarCarteraModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editarCarteraModalLabel">Editar Cartera</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="editarForm" method="POST">
+        <div class="modal-body">
+            <div class="mb-3">
+                <label class="form-label">Código (no se puede cambiar)</label>
+                <input type="text" class="form-control" id="edit_code" name="code" readonly>
+            </div>
+            <div class="mb-3">
+                <label for="edit_name" class="form-label">Nombre de la Cartera</label>
+                <input type="text" class="form-control" id="edit_name" name="name" required>
+            </div>
+            <div class="mb-3">
+                <label for="edit_description" class="form-label">Descripción (Opcional)</label>
+                <textarea class="form-control" id="edit_description" name="description" rows="3"></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const editarModal = document.getElementById('editarCarteraModal');
+    if (editarModal) {
+        editarModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const carteraId = button.getAttribute('data-id');
+
+            const form = document.getElementById('editarForm');
+            form.action = `/carteras/editar/${carteraId}`;
+
+            // Rellenar los campos del formulario con los datos de la cartera
+            form.querySelector('#edit_code').value = button.getAttribute('data-code');
+            form.querySelector('#edit_name').value = button.getAttribute('data-name');
+            form.querySelector('#edit_description').value = button.getAttribute('data-description');
+        });
+    }
+</script>
+{% endblock %}
